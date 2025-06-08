@@ -34,14 +34,29 @@
             gap: 1.2rem;
         }
         input[type="file"] {
-            border: 1px solid #d1e3fa;
+            display: none;
+        }
+        .custom-file-label {
+            display: inline-block;
+            background: linear-gradient(90deg, #fbbf24 60%, #f472b6 100%);
+            color: #fff;
+            border: none;
             border-radius: 8px;
-            padding: 0.5rem;
-            background: #f6faff;
+            padding: 0.6rem 1.2rem;
             font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+            box-shadow: 0 2px 8px rgba(251, 191, 36, 0.10);
+            margin-bottom: 0.5rem;
+        }
+        .custom-file-label:hover {
+            background: linear-gradient(90deg, #f59e42 60%, #ec4899 100%);
+            transform: translateY(-1px) scale(1.03);
+            box-shadow: 0 4px 16px rgba(251, 191, 36, 0.16);
         }
         button[type="submit"] {
-            background: linear-gradient(90deg, #2563eb 60%, #60a5fa 100%);
+            background: linear-gradient(90deg, #10b981 60%, #22d3ee 100%);
             color: #fff;
             border: none;
             border-radius: 8px;
@@ -49,11 +64,13 @@
             font-size: 1.1rem;
             font-weight: 500;
             cursor: pointer;
-            transition: background 0.2s, box-shadow 0.2s;
-            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+            transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.12);
         }
         button[type="submit"]:hover {
-            background: linear-gradient(90deg, #1d4ed8 60%, #3b82f6 100%);
+            background: linear-gradient(90deg, #059669 60%, #0ea5e9 100%);
+            transform: translateY(-2px) scale(1.04);
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.18);
         }
     </style>
 </head>
@@ -61,25 +78,54 @@
     <div class="upload-container">
         <h1>Upload an Image</h1>
         <form id="uploadForm" enctype="multipart/form-data">
-            <input type="file" name="image" accept="image/*" required>
+            <label class="custom-file-label" for="fileInput">Choose Image</label>
+            <input type="file" id="fileInput" name="image" accept="image/*" required>
+            <div style="margin: 1rem 0; text-align:left;">
+                <label><input type="radio" name="filter_type" value="grayscale" checked> Grayscale</label>
+                <label style="margin-left:1.5rem;"><input type="radio" name="filter_type" value="bw"> Black & White</label>
+            </div>
             <button type="submit">Upload</button>
         </form>
         <div id="message" style="margin-top:1rem;"></div>
+        <img id="resultImage" style="margin-top:1rem; max-width:300px; max-height:300px; display:none; border-radius:8px; box-shadow:0 2px 8px rgba(37,99,235,0.08);" />
+        <br />
+        <a id="downloadBtn" href="#" download="grayscale.png" style="display:none; margin-top:0.5rem; padding:0.5rem 1.2rem; background:#2563eb; color:#fff; border-radius:6px; text-decoration:none; font-weight:500;">Download Image</a>
     </div>
     <script>
         const form = document.getElementById('uploadForm');
         const messageDiv = document.getElementById('message');
+        const fileInput = document.getElementById('fileInput');
+        const fileLabel = document.querySelector('.custom-file-label');
+        const resultImage = document.getElementById('resultImage');
+        const downloadBtn = document.getElementById('downloadBtn');
+        fileInput.addEventListener('change', function() {
+            if (fileInput.files.length > 0) {
+                fileLabel.textContent = fileInput.files[0].name;
+            } else {
+                fileLabel.textContent = 'Choose Image';
+            }
+        });
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             messageDiv.textContent = '';
+            resultImage.src = '';
+            resultImage.style.display = 'none';
+            downloadBtn.style.display = 'none';
             const formData = new FormData(form);
+            const filterType = form.querySelector('input[name="filter_type"]:checked').value;
+            formData.set('filter_type', filterType);
             try {
-                const response = await fetch('/upload', {
+                const response = await fetch('http://127.0.0.1:8000/upload', {
                     method: 'POST',
                     body: formData
                 });
                 if (response.ok) {
-                    const data = await response.json();
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    resultImage.src = url;
+                    resultImage.style.display = 'block';
+                    downloadBtn.href = url;
+                    downloadBtn.style.display = 'inline-block';
                     messageDiv.style.color = '#2563eb';
                     messageDiv.textContent = 'Upload successful!';
                 } else {
