@@ -3,4 +3,4 @@ python-multipart
 uvicorn
 starlette
 pillow
-cupy
+cupy-cuda11x
